@@ -13,11 +13,28 @@ const app = express();
 // Middleware
 // CORS configuration for multiple origins
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5000',
-    process.env.CLIENT_URL
-  ].filter(Boolean), // Remove undefined values
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5000',
+      process.env.CLIENT_URL
+    ].filter(Boolean);
+    
+    // Allow all Netlify, Vercel, and Surge domains
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.netlify.app') ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.surge.sh')
+    ) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now - change to false in production if needed
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
