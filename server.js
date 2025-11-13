@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 
 // Load environment variables
@@ -38,8 +39,34 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    env: {
+      nodeEnv: process.env.NODE_ENV,
+      mongoConfigured: !!process.env.MONGODB_URI,
+      mongoUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'NOT SET'
+    }
   });
+});
+
+// Database status endpoint
+app.get('/api/db-status', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    res.json({
+      status: states[dbState],
+      readyState: dbState,
+      mongoUri: process.env.MONGODB_URI ? 'Configured' : 'NOT SET'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Root endpoint
