@@ -17,8 +17,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-connectDB();
+// Middleware to connect to MongoDB on each request (for serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
 
 // Import routes
 import carRoutes from './routes/carRoutes.js';
@@ -27,7 +35,23 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Car Rental API',
+    endpoints: {
+      health: '/api/health',
+      cars: '/api/cars',
+      bookings: '/api/bookings'
+    }
+  });
 });
 
 // API Routes
